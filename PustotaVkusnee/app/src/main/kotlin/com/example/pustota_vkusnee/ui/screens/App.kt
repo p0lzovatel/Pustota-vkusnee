@@ -1,3 +1,60 @@
+package com.example.pustota_vkusnee.ui.screens
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+// Layout
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
+
+// Lazy Grid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import kotlinx.coroutines.delay
+
+// Shape
+import androidx.compose.foundation.shape.RoundedCornerShape
+
+// Material3
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+
+// Animation
+import androidx.compose.animation.core.spring
+
+import com.example.pustota_vkusnee.data.models.Product
+import com.example.pustota_vkusnee.data.models.CATS
+import com.example.pustota_vkusnee.data.models.Level
+import com.example.pustota_vkusnee.data.models.countdown
+import com.example.pustota_vkusnee.data.models.PRODUCTS
+
 @Composable
 fun MarketScreen(onReserve: () -> Unit) {
     var cat by remember { mutableStateOf("все") }
@@ -13,12 +70,12 @@ fun MarketScreen(onReserve: () -> Unit) {
     val visibleProducts = if (cat == "все") PRODUCTS else PRODUCTS.filter { it.cat == cat }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        // Заголовок (упрощенно)
+        // Заголовок
         Text(text = "Маркет", style = MaterialTheme.typography.headlineLarge)
-        
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Легенда срочности (аналог urgency legend)
+        // Легенда срочности
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(
                 "Срочно — меньше 6 ч" to Color.Red,
@@ -44,11 +101,11 @@ fun MarketScreen(onReserve: () -> Unit) {
             CATS.forEach { c ->
                 val isSelected = cat == c
                 Text(
-                    text = c.capitalize(),
+                    text = c.replaceFirstChar { it.uppercase() },
                     color = if (isSelected) Color.White else Color.Gray,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
-                        .background(if (isSelected) Color.Amber else Color.Transparent, RoundedCornerShape(8.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(8.dp))
                         .clickable { cat = c }
                         .padding(8.dp)
                 )
@@ -84,17 +141,16 @@ fun ProductCard(product: Product, tick: Int) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultAnimationSpec = spring())
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Изображение и бейдж (здесь просто заглушка для Image)
+            // Изображение и бейдж
             Box(modifier = Modifier.height(150.dp).fillMaxWidth()) {
                 // Image(painter = painterResource(product.img), contentDescription = null)
                 Box(modifier = Modifier.fillMaxSize().background(Color.Gray)) // заглушка
                 
                 // UrgencyBadge
-                val cd = countdown(product.expiresAt)
+                val cd = remember(tick) { countdown(product.expiresAt) }
                 val badgeColor = when (cd.level) {
                     is Level.Critical -> Color.Red
                     is Level.Warning -> Color.Yellow
@@ -116,7 +172,7 @@ fun ProductCard(product: Product, tick: Int) {
                 Spacer(modifier = Modifier.weight(1f))
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "${product.price} ₽", color = Color.Amber, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "${product.price} ₽", color = MaterialTheme.colorScheme.primary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text(text = " ${product.origPrice} ₽", textDecoration = TextDecoration.LineThrough, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                 }
                 
@@ -125,7 +181,7 @@ fun ProductCard(product: Product, tick: Int) {
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (added) Color.Green else Color.Transparent,
-                        contentColor = if (added) Color.White else Color.Amber
+                        contentColor = if (added) Color.White else MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text(text = if (added) "✓ В корзине" else "Купить")
