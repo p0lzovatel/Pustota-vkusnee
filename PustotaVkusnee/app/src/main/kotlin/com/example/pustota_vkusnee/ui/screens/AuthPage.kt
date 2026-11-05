@@ -1,22 +1,34 @@
- import androidx.compose.foundation.*
+package com.example.pustota_vkusnee.ui.screens
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.pustota_vkusnee.AppColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -28,11 +40,8 @@ enum class AuthMode { Login, Register, Forgot }
 // --- Основной экран ---
 @Composable
 fun AuthPage(onAuth: (AuthUser) -> Unit) {
-    val context = LocalContext.current
     var mode by remember { mutableStateOf(AuthMode.Login) }
-    var userName by remember { mutableStateOf("") }
-    
-    // Данные для форм
+
     var loginEmail by remember { mutableStateOf("") }
     var loginPassword by remember { mutableStateOf("") }
     var loginError by remember { mutableStateOf("") }
@@ -52,8 +61,8 @@ fun AuthPage(onAuth: (AuthUser) -> Unit) {
 
     val coroutineScope = rememberCoroutineScope()
 
-    // --- Вспомогательные функции (логика) ---
     fun handleLoginSubmit() {
+        loginError = ""
         if (loginPassword.length < 4) {
             loginError = "Неверный email или пароль"
             return
@@ -62,7 +71,12 @@ fun AuthPage(onAuth: (AuthUser) -> Unit) {
         coroutineScope.launch {
             delay(800)
             isLoginLoading = false
-            onAuth(AuthUser(name = loginEmail.split("@").firstOrNull() ?: "User", email = loginEmail))
+            onAuth(
+                AuthUser(
+                    name = loginEmail.split("@").firstOrNull() ?: "User",
+                    email = loginEmail
+                )
+            )
         }
     }
 
@@ -99,123 +113,80 @@ fun AuthPage(onAuth: (AuthUser) -> Unit) {
         }
     }
 
-    // --- UI Компоненты ---
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(modifier = Modifier.weight(1f)) {
-            // Левая панель (декоративная, как в оригинале)
+    // --- Разметка (только форма, без левой панели) ---
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.bg)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Логотип
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .weight(0.52f)
-                    .fillMaxHeight()
-                    .background(Color.Black) // Заглушка вместо картинки
-                    .clip(RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp)) // Имитация скругления
+                    .size(32.dp)
+                    .background(AppColors.amber, RoundedCornerShape(50))
             ) {
-                // Здесь можно вставить Image(painter = painterResource(...))
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Логотип
-                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(Color.Yellow, RoundedCornerShape(50))
-                        ) {
-                            Text("ПВ", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Пустота вкуснее", color = Color.White, fontSize = 18.sp, style = androidx.compose.ui.text.TextStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
-                    }
-
-                    // Основной текст
-                    Column {
-                        Text(
-                            text = "Еда, которая\nне должна\nисчезнуть",
-                            color = Color.White,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Black,
-                            lineHeight = 40.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Ресторан и маркет продуктов с истекающим сроком годности.\nСкидки до 70%. Ничего не выбрасывается.",
-                            color = Color(0xFF888888),
-                            fontSize = 14.sp
-                        )
-                        
-                        // Цитата и статистика (упрощенно)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text("«Самое вкусное блюдо — то, которое могло быть выброшено...»", color = Color(0xFFFFFFFF), fontSize = 12.sp, style = androidx.compose.ui.text.TextStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
-                        Text("- Илья Сорин", color = Color(0xFF888888), fontSize = 10.sp)
-                    }
-                }
+                Text("ПВ", color = AppColors.bg, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Пустота вкуснее",
+                color = AppColors.cream,
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic
+            )
+        }
 
-            // Правая панель (формы)
-            Column(
-                modifier = Modifier
-                    .weight(0.48f)
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(40.dp))
-                
-                // Мобильный логотип
-                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(32.dp).background(Color.Yellow, RoundedCornerShape(50))
-                    ) {
-                        Text("ПВ", color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Пустота вкуснее", color = Color.White, fontSize = 16.sp, style = androidx.compose.ui.text.TextStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
-                }
+        Spacer(modifier = Modifier.height(48.dp))
 
-                Spacer(modifier = Modifier.height(32.dp))
-                Box(modifier = Modifier.widthIn(max = 350.dp)) {
-                    renderAuthContent(
-                        mode = mode,
-                        onSetMode = { mode = it },
-                        loginEmail = loginEmail,
-                        loginPassword = loginPassword,
-                        loginError = loginError,
-                        isLoginLoading = isLoginLoading,
-                        onLoginSubmit = ::handleLoginSubmit,
-                        regName = regName,
-                        regEmail = regEmail,
-                        regPhone = regPhone,
-                        regPassword = regPassword,
-                        regAgree = regAgree,
-                        regErrors = regErrors,
-                        isRegLoading = isRegLoading,
-                        onRegisterSubmit = ::handleRegisterSubmit,
-                        forgotEmail = forgotEmail,
-                        isForgotLoading = isForgotLoading,
-                        isForgotSent = isForgotSent,
-                        onForgotSubmit = ::handleForgotSubmit,
-                        onBack = { mode = AuthMode.Login }
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
-            }
+        Box(modifier = Modifier.widthIn(max = 350.dp)) {
+            renderAuthContent(
+                mode = mode,
+                onSetMode = { mode = it },
+                loginEmail = loginEmail,
+                loginPassword = loginPassword,
+                loginError = loginError,
+                isLoginLoading = isLoginLoading,
+                onLoginEmailChange = { loginEmail = it },
+                onLoginPasswordChange = { loginPassword = it },
+                onLoginSubmit = ::handleLoginSubmit,
+                regName = regName,
+                regEmail = regEmail,
+                regPhone = regPhone,
+                regPassword = regPassword,
+                regAgree = regAgree,
+                regErrors = regErrors,
+                isRegLoading = isRegLoading,
+                onRegNameChange = { regName = it },
+                onRegEmailChange = { regEmail = it },
+                onRegPhoneChange = { regPhone = it },
+                onRegPasswordChange = { regPassword = it },
+                onRegAgreeChange = { regAgree = it },
+                onRegisterSubmit = ::handleRegisterSubmit,
+                forgotEmail = forgotEmail,
+                isForgotLoading = isForgotLoading,
+                isForgotSent = isForgotSent,
+                onForgotEmailChange = { forgotEmail = it },
+                onForgotSubmit = ::handleForgotSubmit,
+                onBack = { mode = AuthMode.Login }
+            )
         }
     }
 }
 
-// --- Рендерер контента (переключатель форм) ---
+// --- Рендерер контента ---
 @Composable
 private fun renderAuthContent(
     mode: AuthMode,
     onSetMode: (AuthMode) -> Unit,
     loginEmail: String,
     loginPassword: String,
+    onLoginEmailChange: (String) -> Unit,
+    onLoginPasswordChange: (String) -> Unit,
     loginError: String,
     isLoginLoading: Boolean,
     onLoginSubmit: () -> Unit,
@@ -226,10 +197,17 @@ private fun renderAuthContent(
     regAgree: Boolean,
     regErrors: Map<String, String>,
     isRegLoading: Boolean,
+    onRegNameChange: (String) -> Unit,
+    onRegEmailChange: (String) -> Unit,
+    onRegPhoneChange: (String) -> Unit,
+    onRegPasswordChange: (String) -> Unit,
+    onRegAgreeChange: (Boolean) -> Unit,
     onRegisterSubmit: () -> Unit,
     forgotEmail: String,
     isForgotLoading: Boolean,
     isForgotSent: Boolean,
+    onForgotEmailChange: (String) -> Unit,
+    onForgotSubmit: () -> Unit,
     onBack: () -> Unit
 ) {
     Column {
@@ -245,33 +223,46 @@ private fun renderAuthContent(
             AuthMode.Forgot -> ""
         }
 
-        Text(text = title, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(
+            text = title,
+            color = AppColors.cream,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+        )
         if (sub.isNotBlank()) {
-            Text(text = sub, color = Color(0xFFAAAAAA), fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                text = sub,
+                color = AppColors.muted,
+                fontSize = 14.sp,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Переключатель вкладок (Login/Register)
+        // Переключатель вкладок
         if (mode != AuthMode.Forgot) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
-                    .background(Color(0xFF222222), RoundedCornerShape(8.dp)),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    .background(AppColors.surface2, RoundedCornerShape(4.dp))
+                    .border(1.dp, AppColors.border, RoundedCornerShape(4.dp)),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                listOf(Pair(AuthMode.Login, "Войти"), Pair(AuthMode.Register, "Регистрация"))
+                listOf(AuthMode.Login to "Войти", AuthMode.Register to "Регистрация")
                     .forEach { (m, label) ->
                         val isActive = mode == m
                         Button(
                             onClick = { onSetMode(m) },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isActive) Color.Yellow else Color.Transparent,
-                                contentColor = if (isActive) Color.Black else Color(0xFFAAAAAA)
+                                containerColor = if (isActive) AppColors.amber else Color.Transparent,
+                                contentColor = if (isActive) AppColors.bg else AppColors.muted
                             ),
-                            shape = RoundedCornerShape(6.dp),
-                            modifier = Modifier.weight(1f)
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.weight(1f).fillMaxHeight().padding(2.dp)
                         ) {
                             Text(label, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal)
                         }
@@ -283,52 +274,87 @@ private fun renderAuthContent(
         // Формы
         when (mode) {
             AuthMode.Login -> LoginForm(
-                email = loginEmail, password = loginPassword, error = loginError, isLoading = isLoginLoading, onSubmit = onLoginSubmit
+                email = loginEmail,
+                password = loginPassword,
+                error = loginError,
+                isLoading = isLoginLoading,
+                onEmailChange = onLoginEmailChange,
+                onPasswordChange = onLoginPasswordChange,
+                onForgot = { onSetMode(AuthMode.Forgot) },
+                onSubmit = onLoginSubmit
             )
+
             AuthMode.Register -> RegisterForm(
-                name = regName, email = regEmail, phone = regPhone, password = regPassword, agree = regAgree, errors = regErrors, isLoading = isRegLoading, onSubmit = onRegisterSubmit
+                name = regName,
+                email = regEmail,
+                phone = regPhone,
+                password = regPassword,
+                agree = regAgree,
+                errors = regErrors,
+                isLoading = isRegLoading,
+                onNameChange = onRegNameChange,
+                onEmailChange = onRegEmailChange,
+                onPhoneChange = onRegPhoneChange,
+                onPasswordChange = onRegPasswordChange,
+                onAgreeChange = { onRegAgreeChange(!regAgree) },
+                onSubmit = onRegisterSubmit
             )
+
             AuthMode.Forgot -> ForgotForm(
-                email = forgotEmail, isLoading = isForgotLoading, isSent = isForgotSent, onSubmit = onForgotSubmit, onBack = onBack
+                email = forgotEmail,
+                isLoading = isForgotLoading,
+                isSent = isForgotSent,
+                onEmailChange = onForgotEmailChange,
+                onSubmit = onForgotSubmit,
+                onBack = onBack
             )
         }
 
-        // Соц. сети (упрощенно)
+        // Кнопки соцсетей и подсказки
         if (mode != AuthMode.Forgot) {
             Spacer(modifier = Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                Divider(color = Color(0xFF444444), modifier = Modifier.weight(1f))
-                Text("или", color = Color(0xFFAAAAAA), fontSize = 12.sp)
-                Divider(color = Color(0xFF444444), modifier = Modifier.weight(1f))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                HorizontalDivider(color = AppColors.border, modifier = Modifier.weight(1f))
+                Text("или", color = AppColors.muted, fontSize = 12.sp, letterSpacing = 1.sp)
+                HorizontalDivider(color = AppColors.border, modifier = Modifier.weight(1f))
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            listOf("Войти через VK", "Войти через Google").forEach { text ->
+            listOf("🔷 Войти через VK", "🔵 Войти через Google").forEach { text ->
                 OutlinedButton(
                     onClick = {},
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent, contentColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFF444444)),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = AppColors.surface,
+                        contentColor = AppColors.cream
+                    ),
+                    border = BorderStroke(1.dp, AppColors.border),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
                 ) {
-                    Text(text, color = Color.White)
+                    Text(text, color = AppColors.cream, fontSize = 14.sp)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             val hintText = if (mode == AuthMode.Login) "Нет аккаунта? Зарегистрироваться" else "Уже есть аккаунт? Войти"
-            TextButton(onClick = { onSetMode(if (mode == AuthMode.Login) AuthMode.Register else AuthMode.Login) }) {
-                Text(hintText, color = Color.Yellow)
+            TextButton(
+                onClick = { onSetMode(if (mode == AuthMode.Login) AuthMode.Register else AuthMode.Login) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(hintText, color = AppColors.amber, fontSize = 12.sp)
             }
         }
     }
 }
 
-// --- Компоненты форм ---
-
-// ... (предыдущий код AuthPage и renderAuthContent остается без изменений) ...
-
-// --- Компоненты форм (продолжение) ---
+// --- Формы ---
 
 @Composable
 private fun LoginForm(
@@ -338,16 +364,18 @@ private fun LoginForm(
     isLoading: Boolean,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    onForgot: () -> Unit,
     onSubmit: () -> Unit
 ) {
     Column {
-        Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = email,
             onValueChange = onEmailChange,
-            label = { Text("Email", color = Color(0xFF666666)) },
-            placeholder = { Text("you@example.com") },
-            colors = textFieldColors(),
+            label = { Text("Email", color = AppColors.muted, fontSize = 12.sp) },
+            placeholder = { Text("you@example.com", color = AppColors.muted.copy(alpha = 0.4f)) },
+            colors = authTextFieldColors(),
+            shape = RoundedCornerShape(4.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -357,19 +385,20 @@ private fun LoginForm(
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
-            label = { Text("Пароль", color = Color(0xFF666666)) },
-            placeholder = { Text("••••••••") },
+            label = { Text("Пароль", color = AppColors.muted, fontSize = 12.sp) },
+            placeholder = { Text("••••••••", color = AppColors.muted.copy(alpha = 0.4f)) },
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 IconButton(onClick = { showPassword = !showPassword }) {
                     Icon(
                         imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                         contentDescription = null,
-                        tint = Color(0xFFAAAAAA)
+                        tint = AppColors.muted
                     )
                 }
             },
-            colors = textFieldColors(),
+            colors = authTextFieldColors(),
+            shape = RoundedCornerShape(4.dp),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -377,21 +406,25 @@ private fun LoginForm(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = error,
-                color = Color.Red,
+                color = AppColors.urgent,
                 fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.urgent.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                    .border(1.dp, AppColors.urgent.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                    .padding(8.dp),
                 textAlign = TextAlign.Center
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(
-            onClick = {}, // В реальном проекте нужен callback onForgot
+            onClick = onForgot,
             modifier = Modifier.align(Alignment.End),
-            contentColor = Color(0xFFAAAAAA)
+            colors = ButtonDefaults.textButtonColors(contentColor = AppColors.muted)
         ) {
-            Text("Забыли пароль?")
+            Text("Забыли пароль?", fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -399,15 +432,16 @@ private fun LoginForm(
         Button(
             onClick = onSubmit,
             enabled = !isLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Yellow, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
+            shape = RoundedCornerShape(4.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AppColors.bg, strokeWidth = 2.dp)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Входим…", color = Color.Black)
+                Text("Входим…", color = AppColors.bg, fontWeight = FontWeight.Bold)
             } else {
-                Text("Войти", color = Color.Black)
+                Text("Войти", color = AppColors.bg, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -429,116 +463,154 @@ private fun RegisterForm(
     onAgreeChange: () -> Unit,
     onSubmit: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Сетка Имя/Телефон
-        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
-                label = { Text("Имя") },
-                colors = textFieldColors(),
+                label = { Text("Имя", fontSize = 12.sp, color = AppColors.muted) },
+                colors = authTextFieldColors(),
+                shape = RoundedCornerShape(4.dp),
                 modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.width(16.dp))
             OutlinedTextField(
                 value = phone,
                 onValueChange = onPhoneChange,
-                label = { Text("Телефон") },
+                label = { Text("Телефон", fontSize = 12.sp, color = AppColors.muted) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                colors = textFieldColors(),
+                colors = authTextFieldColors(),
+                shape = RoundedCornerShape(4.dp),
                 modifier = Modifier.weight(1f)
             )
         }
-        if (errors["name"].isNotNullOrBlank()) {
-            Text(errors["name"]!!, color = Color.Red, fontSize = 10.sp)
+        if (!errors["name"].isNullOrBlank()) {
+            Text(errors["name"]!!, color = AppColors.urgent, fontSize = 10.sp)
         }
 
         OutlinedTextField(
             value = email,
             onValueChange = onEmailChange,
-            label = { Text("Email") },
-            placeholder = { Text("you@example.com") },
-            colors = textFieldColors(),
+            label = { Text("Email", fontSize = 12.sp, color = AppColors.muted) },
+            placeholder = { Text("you@example.com", color = AppColors.muted.copy(alpha = 0.4f)) },
+            colors = authTextFieldColors(),
+            shape = RoundedCornerShape(4.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
-        if (errors["email"].isNotNullOrBlank()) {
-            Text(errors["email"]!!, color = Color.Red, fontSize = 10.sp)
+        if (!errors["email"].isNullOrBlank()) {
+            Text(errors["email"]!!, color = AppColors.urgent, fontSize = 10.sp)
         }
 
         var showPassword by remember { mutableStateOf(false) }
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
-            label = { Text("Пароль") },
-            placeholder = { Text("••••••••") },
+            label = { Text("Пароль", fontSize = 12.sp, color = AppColors.muted) },
+            placeholder = { Text("••••••••", color = AppColors.muted.copy(alpha = 0.4f)) },
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 IconButton(onClick = { showPassword = !showPassword }) {
-                    Icon(imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff, contentDescription = null)
+                    Icon(
+                        imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = AppColors.muted
+                    )
                 }
             },
-            colors = textFieldColors(),
+            colors = authTextFieldColors(),
+            shape = RoundedCornerShape(4.dp),
             modifier = Modifier.fillMaxWidth()
         )
-        if (errors["password"].isNotNullOrBlank()) {
-            Text(errors["password"]!!, color = Color.Red, fontSize = 10.sp)
+        if (!errors["password"].isNullOrBlank()) {
+            Text(errors["password"]!!, color = AppColors.urgent, fontSize = 10.sp)
         }
 
-        // Индикатор силы пароля
+        // Индикатор надёжности пароля
         if (password.isNotEmpty()) {
             val strength = minOf(4, password.length / 2)
             val labels = listOf("слабый", "средний", "хороший", "сильный")
             val currentLabel = labels.getOrElse(strength - 1) { "слабый" }
-            
-            Row(horizontalArrangement = Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 repeat(4) { i ->
                     val color = when {
-                        i < strength && strength < 2 -> Color.Red
-                        i < strength && strength < 3 -> Color.Yellow
-                        i < strength -> Color.Green
-                        else -> Color(0xFF333333)
+                        i < strength && strength < 2 -> AppColors.urgent
+                        i < strength && strength < 3 -> AppColors.gold
+                        i < strength -> AppColors.safe
+                        else -> AppColors.border
                     }
-                    Box(modifier = Modifier.size(4.dp).background(color).clip(RoundedCornerShape(2.dp)))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(4.dp)
+                            .background(color, RoundedCornerShape(2.dp))
+                    )
                 }
-                Text(currentLabel, color = Color(0xFFAAAAAA), fontSize = 10.sp, modifier = Modifier.padding(start = 8.dp))
+                Text(
+                    currentLabel,
+                    color = AppColors.muted,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
         }
 
-        // Чекбокс согласия
+        // Кастомный чекбокс
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 8.dp)
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .clickable { onAgreeChange() }
         ) {
-            Checkbox(
-                checked = agree,
-                onCheckedChange = { onAgreeChange() },
-                checkmarkColor = Color.Yellow,
-                uncheckedColor = Color(0xFF444444),
-                modifier = Modifier.size(20.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(if (agree) AppColors.amber else Color.Transparent)
+                    .border(1.dp, if (agree) AppColors.amber else AppColors.border, RoundedCornerShape(2.dp))
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (agree) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = AppColors.bg,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Соглашаюсь с условиями использования и политикой конфиденциальности",
-                color = Color(0xFFAAAAAA),
-                fontSize = 12.sp,
-                style = androidx.compose.ui.text.TextStyle(textDecoration = TextDecoration.Underline)
+                color = AppColors.muted,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                textDecoration = TextDecoration.Underline
             )
         }
-        if (errors["agree"].isNotNullOrBlank()) {
-            Text(errors["agree"]!!, color = Color.Red, fontSize = 10.sp)
+        if (!errors["agree"].isNullOrBlank()) {
+            Text(errors["agree"]!!, color = AppColors.urgent, fontSize = 10.sp)
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
 
         Button(
             onClick = onSubmit,
             enabled = !isLoading && agree,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Yellow, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
+            shape = RoundedCornerShape(4.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
-                Text("Создаём аккаунт…", color = Color.Black)
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AppColors.bg, strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Создаём аккаунт…", color = AppColors.bg, fontWeight = FontWeight.Bold)
             } else {
-                Text("Создать аккаунт", color = Color.Black)
+                Text("Создать аккаунт", color = AppColors.bg, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -556,25 +628,30 @@ private fun ForgotForm(
     if (isSent) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            modifier = Modifier.padding(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(56.dp)
-                    .background(Color.Green, RoundedCornerShape(50))
+                    .background(AppColors.safe.copy(alpha = 0.15f), RoundedCornerShape(50))
+                    .border(1.dp, AppColors.safe.copy(alpha = 0.3f), RoundedCornerShape(50))
             ) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Check, contentDescription = null, tint = AppColors.safe, modifier = Modifier.size(32.dp))
             }
-            Text("Письмо отправлено", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            Text("Письмо отправлено", color = AppColors.cream, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text(
                 "Если адрес $email зарегистрирован у нас, вы получите ссылку для сброса пароля.",
-                color = Color(0xFFAAAAAA),
+                color = AppColors.muted,
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                lineHeight = 20.sp
             )
-            Button(onClick = onBack, colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.Yellow)) {
+            TextButton(
+                onClick = onBack,
+                colors = ButtonDefaults.textButtonColors(contentColor = AppColors.amber)
+            ) {
                 Text("Вернуться к входу")
             }
         }
@@ -582,60 +659,62 @@ private fun ForgotForm(
         Column {
             Text(
                 "Введите email, с которым регистрировались — мы пришлём ссылку для сброса пароля.",
-                color = Color(0xFFAAAAAA),
+                color = AppColors.muted,
                 fontSize = 14.sp,
+                lineHeight = 20.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
             OutlinedTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = { Text("Email") },
-                placeholder = { Text("you@example.com") },
-                colors = textFieldColors(),
+                label = { Text("Email", fontSize = 12.sp, color = AppColors.muted) },
+                placeholder = { Text("you@example.com", color = AppColors.muted.copy(alpha = 0.4f)) },
+                colors = authTextFieldColors(),
+                shape = RoundedCornerShape(4.dp),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = onSubmit,
                 enabled = !isLoading && email.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Yellow, contentColor = Color.Black),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
+                shape = RoundedCornerShape(4.dp),
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
-                    Text("Отправляем…", color = Color.Black)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AppColors.bg, strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Отправляем…", color = AppColors.bg, fontWeight = FontWeight.Bold)
                 } else {
-                    Text("Сбросить пароль", color = Color.Black)
+                    Text("Сбросить пароль", color = AppColors.bg, fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onBack, contentColor = Color(0xFFAAAAAA)) {
-                Text("← Назад к входу")
+            TextButton(
+                onClick = onBack,
+                colors = ButtonDefaults.textButtonColors(contentColor = AppColors.muted)
+            ) {
+                Text("← Назад к входу", fontSize = 12.sp)
             }
         }
     }
 }
 
-// Вспомогательные функции
+// --- Стили полей ---
 
-private fun textFieldColors() = TextFieldDefaults.outlinedTextFieldColors(
-    focusedBorderColor = Color.Yellow,
-    unfocusedBorderColor = Color(0xFF444444),
-    textColor = Color.White,
-    labelColor = Color(0xFFAAAAAA),
-    placeholderColor = Color(0xFF555555),
-    cursorColor = Color.Yellow
-)
-
-// --- PREVIEW (для тестирования в Android Studio) ---
-@Preview(showBackground = true)
 @Composable
-fun AuthPagePreview() {
-    MaterialTheme {
-        Box(modifier = Modifier.background(Color.Black)) {
-            AuthPage(onAuth = { user -> println("Auth success: ${user.name}, ${user.email}") })
-        }
-    }
-}
+private fun authTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = AppColors.amber,
+    unfocusedBorderColor = AppColors.border,
+    focusedTextColor = AppColors.cream,
+    unfocusedTextColor = AppColors.cream,
+    focusedLabelColor = AppColors.amber,
+    unfocusedLabelColor = AppColors.muted,
+    cursorColor = AppColors.amber,
+    focusedContainerColor = AppColors.surface2,
+    unfocusedContainerColor = AppColors.surface2
+)
