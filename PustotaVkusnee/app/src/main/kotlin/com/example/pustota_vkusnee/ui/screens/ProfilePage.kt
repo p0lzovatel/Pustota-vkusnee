@@ -1,35 +1,62 @@
-package com.example.myapp.ui.profile
+package com.example.pustota_vkusnee.ui.screens
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapp.ui.theme.AppColors // Импортируй свои цвета сюда
+import com.example.pustota_vkusnee.AppColors
 
-// --- МОК-ДАННЫЕ (Аналог const ORDERS = [...] в JS) ---
+// --- Модели данных ---
+data class UserData(val name: String, val email: String)
+
+data class ProfileData(
+    val name: String,
+    val email: String,
+    val phone: String,
+    val city: String,
+    val birthday: String
+)
+
+data class Notifications(
+    val orders: Boolean,
+    val promos: Boolean,
+    val expiry: Boolean,
+    val newsletter: Boolean
+)
+
+data class PasswordData(val current: String, val next: String, val confirm: String)
+
 data class OrderItem(val name: String, val qty: Int, val price: Int, val img: String)
 data class Order(
     val id: String,
     val date: String,
-    val status: String, // delivered, cancelled
+    val status: String,
     val items: List<OrderItem>,
     val total: Int,
     val delivery: String
@@ -40,18 +67,24 @@ data class Reservation(
     val date: String,
     val time: String,
     val guests: Int,
-    val status: String, // upcoming, past
+    val status: String,
     val comment: String
 )
 
 val MOCK_ORDERS = listOf(
     Order("ПВ-2024-118", "28 сентября 2024", "delivered",
-        listOf(OrderItem("Йогурт греческий 4%", 2, 94, ""), OrderItem("Томаты черри", 1, 79, "")), 267, "Самовывоз"),
+        listOf(
+            OrderItem("Йогурт греческий 4%", 2, 94, ""),
+            OrderItem("Томаты черри", 1, 79, "")
+        ), 267, "Самовывоз"),
     Order("ПВ-2024-099", "19 сентября 2024", "delivered",
-        listOf(OrderItem("Хлеб «Бородинский»", 1, 44, ""), OrderItem("Суп тыквенный", 2, 109, "")), 326, "Доставка"),
+        listOf(
+            OrderItem("Хлеб «Бородинский»", 1, 44, ""),
+            OrderItem("Суп тыквенный", 2, 109, ""),
+            OrderItem("Брокколи", 1, 64, "")
+        ), 326, "Доставка"),
     Order("ПВ-2024-077", "4 сентября 2024", "cancelled",
         listOf(OrderItem("Сыр «Гауда» 45%", 1, 139, "")), 139, "Доставка")
-    )
 )
 
 val MOCK_RESERVATIONS = listOf(
@@ -60,34 +93,31 @@ val MOCK_RESERVATIONS = listOf(
     Reservation("Б-354", "2 августа 2024", "20:00", 5, "past", "День рождения")
 )
 
-// --- Вспомогательные компоненты (Аналог Toggle, StatusBadge) ---
+// --- Вспомогательные компоненты ---
 
 @Composable
 fun StatusBadge(status: String) {
-    var label by remember { mutableStateOf("") }
-    var style by remember { mutableStateOf(AppColors.muted) }
-    
-    when(status) {
-        "delivered" -> { label = "Получен"; style = AppColors.safe }
-        "cancelled" -> { label = "Отменён"; style = AppColors.urgent }
-        "upcoming" -> { label = "Подтверждено"; style = AppColors.amber }
-        "past" -> { label = "Завершено"; style = AppColors.muted }
-        else -> { label = status; style = AppColors.muted }
+    val (label, color) = when (status) {
+        "delivered" -> "Получен" to AppColors.safe
+        "cancelled" -> "Отменён" to AppColors.urgent
+        "upcoming" -> "Подтверждено" to AppColors.amber
+        "past" -> "Завершено" to AppColors.muted
+        else -> status to AppColors.muted
     }
 
     Surface(
-        color = style.copy(alpha = 0.1f),
-        border = androidx.compose.ui.graphics.Stroke(1.dp, style.copy(alpha = 0.3f)),
+        color = color.copy(alpha = 0.1f),
         shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.3f)),
         modifier = Modifier.padding(horizontal = 4.dp)
     ) {
         Text(
             text = label.uppercase(),
-            color = style,
+            color = color,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.5.sp,
-            modifier = Modifier.padding(8.dp, 4.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
 }
@@ -96,15 +126,15 @@ fun StatusBadge(status: String) {
 fun Toggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Box(
         modifier = Modifier
-            .size(40.dp, 24.dp)
+            .size(width = 40.dp, height = 24.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(if (checked) AppColors.amber else AppColors.border)
             .clickable { onCheckedChange(!checked) }
-            .padding(end = 4.dp)
+            .padding(4.dp),
+        contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart
     ) {
         Box(
             modifier = Modifier
-                .offset(x = if (checked) 16.dp else 0.dp)
                 .size(16.dp)
                 .clip(CircleShape)
                 .background(AppColors.cream)
@@ -122,12 +152,9 @@ fun ProfilePage(
     onBack: () -> Unit,
     onLogout: () -> Unit
 ) {
-    // Состояние табов
     var currentTab by remember { mutableStateOf(ProfileTab.Profile) }
-    val context = LocalContext.current
 
-    // Данные для профиля (аналог useState в ProfileTab)
-    var profileForm by remember(user) { 
+    var profileForm by remember(user) {
         mutableStateOf(
             ProfileData(
                 name = user.name,
@@ -136,29 +163,33 @@ fun ProfilePage(
                 city = "Москва",
                 birthday = "1990-06-15"
             )
-        ) 
+        )
     }
     var savedMessage by remember { mutableStateOf(false) }
 
-    // Данные для настроек (аналог useState в SettingsTab)
-    var notifications by remember { 
-        mutableStateOf(Notifications(orders = true, promos = false, expiry = true, newsletter = false)) 
+    var notifications by remember {
+        mutableStateOf(Notifications(orders = true, promos = false, expiry = true, newsletter = false))
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var passwordForm by remember { 
-        mutableStateOf(PasswordData(current = "", next = "", confirm = "")) 
+    var passwordForm by remember {
+        mutableStateOf(PasswordData(current = "", next = "", confirm = ""))
     }
     var passwordSaved by remember { mutableStateOf(false) }
 
-    // Фильтр заказов
     var orderFilter by remember { mutableStateOf("all") }
+
+    val initials = user.name
+        .split(" ")
+        .mapNotNull { it.firstOrNull()?.uppercase() }
+        .take(2)
+        .joinToString("")
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.bg)
     ) {
-        // 1. HEADER (Верхняя панель)
+        // 1. ВЕРХНЯЯ ПАНЕЛЬ (Header)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -172,12 +203,12 @@ fun ProfilePage(
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Назад", tint = AppColors.muted)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text("На главную", color = AppColors.muted, fontSize = 12.sp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Divider(modifier = Modifier.height(16.dp).width(1.dp), color = AppColors.border)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Пустота вкуснее", color = AppColors.cream, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("·", color = AppColors.border)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Пустота вкуснее", color = AppColors.cream, fontStyle = FontStyle.Italic, fontSize = 14.sp)
             }
             OutlinedButton(
                 onClick = onLogout,
@@ -185,240 +216,326 @@ fun ProfilePage(
                     containerColor = Color.Transparent,
                     contentColor = AppColors.muted
                 ),
-                border = androidx.compose.ui.graphics.Stroke(1.dp, AppColors.border),
+                border = BorderStroke(1.dp, AppColors.border),
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text("Выйти", fontSize = 10.sp)
             }
         }
 
-        // 2. HERO STRIP (Аватар + Баллы)
-        val initials = user.name.split(" ").map { it.firstOrNull()?.uppercase() ?: "" }.take(2).joinToString("")
-        
+        // 2. HERO-ПОЛОСА (Аватар + Статус + Баллы)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .clip(RoundedCornerShape(0, 0, 16.dp, 16.dp)) // Скругление только снизу
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(AppColors.surface, AppColors.surface2),
-                        start = Offset(0f, 0f),
-                        end = Offset(0f, 100f)
-                    )
-                )
-                .border(1.dp, AppColors.border, RoundedCornerShape(0, 0, 16.dp, 16.dp))
+                .background(AppColors.surface)
         ) {
-            // Декоративная текстура (упрощенно через градиент или просто цвет)
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Узор (имитация полосок на фоне)
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(AppColors.amber.copy(alpha = 0.05f), Color.Transparent)
+                        )
+                    )
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(AppColors.amber.copy(alpha = 0.2f))
-                            .border(2.dp, AppColors.amber.copy(alpha = 0.4f))
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.amber.copy(alpha = 0.2f))
+                        .border(2.dp, AppColors.amber.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        initials,
+                        color = AppColors.amber,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(user.name, color = AppColors.cream, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text(user.email, color = AppColors.muted, fontSize = 14.sp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
                     ) {
-                        Text(initials, color = AppColors.amber, fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(user.name, color = AppColors.cream, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                        Text(user.email, color = AppColors.muted, fontSize = 14.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                            Chip(
-                                colors = ChipDefaults.chipColors(containerColor = AppColors.amber.copy(alpha = 0.1f)),
-                                content = { Text("★ Статус: Regular", color = AppColors.amber) }
+                        Surface(
+                            color = AppColors.amber.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, AppColors.amber.copy(alpha = 0.2f))
+                        ) {
+                            Text(
+                                "★ Статус: Regular",
+                                color = AppColors.amber,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
-                            Text("С нами с сентября 2024", color = AppColors.muted, fontSize = 12.sp)
                         }
+                        Text("С нами с сентября 2024", color = AppColors.muted, fontSize = 12.sp)
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    // Блок баллов (скрыт на мобильных, виден на планшетах - здесь упростим)
+                }
+                Column(horizontalAlignment = Alignment.End) {
                     Text("2 390", color = AppColors.amber, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                    Text("бонусных баллов", color = AppColors.muted, fontSize = 10.sp)
+                    Text("бонусных баллов", color = AppColors.muted, fontSize = 12.sp)
                 }
             }
         }
 
-        // 3. ТАБЫ (TabRow)
-        TabRow(
+        // 3. ТАБЫ (Навигация)
+        ScrollableTabRow(
             selectedTabIndex = currentTab.ordinal,
             containerColor = AppColors.surface,
-            indicator = { tabPosition ->
-                Box(
-                    modifier = Modifier
-                        .tabIndicatorOffset(tabPosition)
-                        .height(3.dp)
-                        .background(AppColors.amber)
-                )
-            },
-            divider = { Divider(color = AppColors.border, thickness = 1.dp) }
+            contentColor = AppColors.amber,
+            edgePadding = 16.dp,
+            divider = { HorizontalDivider(color = AppColors.border, thickness = 1.dp) }
         ) {
-            listOf(
+            val tabs = listOf(
                 ProfileTab.Profile to "Профиль",
                 ProfileTab.Orders to "Заказы (${MOCK_ORDERS.size})",
                 ProfileTab.Reservations to "Брони (${MOCK_RESERVATIONS.count { it.status == "upcoming" }})",
                 ProfileTab.Settings to "Настройки"
-            ).forEachIndexed { index, (tab, label) ->
+            )
+            tabs.forEach { (tab, label) ->
                 Tab(
                     selected = currentTab == tab,
                     onClick = { currentTab = tab },
-                    text = { Text(label, color = if (currentTab == tab) AppColors.amber else AppColors.muted) },
-                    selectedContentColor = AppColors.amber,
-                    unselectedContentColor = AppColors.muted,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    text = {
+                        Text(
+                            label,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (currentTab == tab) AppColors.amber else AppColors.muted
+                        )
+                    }
                 )
             }
         }
 
-        // 4. КОНТЕНТ (Switch по табам)
-        Box(modifier = Modifier.weight(1f).padding(16.dp)) {
+        // 4. КОНТЕНТ (Зависит от вкладки)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
+        ) {
             when (currentTab) {
-                ProfileTab.Profile -> ProfileContent(profileForm, savedMessage) { savedMessage = it }
-                ProfileTab.Orders -> OrdersContent(orderFilter) { orderFilter = it }
-                ProfileTab.Reservations -> ReservationsContent()
-                ProfileTab.Settings -> SettingsContent(notifications, showDeleteConfirm, passwordForm, passwordSaved) { showDeleteConfirm = it; passwordSaved = it }
+                ProfileTab.Profile -> ProfileTabContent(
+                    form = profileForm,
+                    saved = savedMessage,
+                    onSave = { savedMessage = it },
+                    onUpdateForm = { profileForm = it }
+                )
+                ProfileTab.Orders -> OrdersTabContent(
+                    filter = orderFilter,
+                    onFilterChange = { orderFilter = it }
+                )
+                ProfileTab.Reservations -> ReservationsTabContent()
+                ProfileTab.Settings -> SettingsTabContent(
+                    notifications = notifications,
+                    showDeleteConfirm = showDeleteConfirm,
+                    passwordForm = passwordForm,
+                    passwordSaved = passwordSaved,
+                    onUpdate = { n, del, p, ps ->
+                        notifications = n
+                        showDeleteConfirm = del
+                        passwordForm = p
+                        passwordSaved = ps
+                    },
+                    onLogout = onLogout
+                )
             }
         }
     }
 }
 
-// --- ПОД-КОМПОНЕНТЫ (Логика вкладок) ---
+// --- ВКЛАДКА: ПРОФИЛЬ ---
 
 @Composable
-fun ProfileContent(
+fun ProfileTabContent(
     form: ProfileData,
     saved: Boolean,
     onSave: (Boolean) -> Unit,
     onUpdateForm: (ProfileData) -> Unit
 ) {
     var localForm by remember(form) { mutableStateOf(form) }
+    val initials = localForm.name.split(" ").mapNotNull { it.firstOrNull()?.uppercase() }.take(2).joinToString("")
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Личные данные",
-            color = AppColors.cream,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.marginBottom(24.dp)
-        )
 
-        GridRow {
-            GridCell(weight = 1f) {
+        // Левая карточка (Аватар и Карта лояльности)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+            border = BorderStroke(1.dp, AppColors.border),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.amber.copy(alpha = 0.2f))
+                        .border(2.dp, AppColors.amber.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(initials, color = AppColors.amber, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(localForm.name, color = AppColors.cream, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(localForm.email, color = AppColors.muted, fontSize = 14.sp)
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = AppColors.border)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("118", color = AppColors.amber, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("заказов", color = AppColors.muted, fontSize = 10.sp)
+                    }
+                    VerticalDivider(color = AppColors.border, modifier = Modifier.height(30.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("2 390", color = AppColors.amber, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("баллов", color = AppColors.muted, fontSize = 10.sp)
+                    }
+                }
+            }
+        }
+
+        // Карта лояльности (янтарная)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColors.amber),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+        ) {
+            Box(modifier = Modifier.padding(20.dp)) {
+                Column {
+                    Text("КАРТА ГОСТЯ", color = AppColors.bg.copy(alpha = 0.6f), fontSize = 10.sp, letterSpacing = 1.sp)
+                    Text("2 390 баллов", color = AppColors.bg, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text("1 балл = 1 ₽ при следующей покупке в маркете. Баллы сгорают через 90 дней.", color = AppColors.bg.copy(alpha = 0.7f), fontSize = 11.sp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = 0.478f,
+                        color = AppColors.bg,
+                        trackColor = AppColors.bg.copy(alpha = 0.2f),
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("2 390 из 5 000 до Silver", color = AppColors.bg.copy(alpha = 0.6f), fontSize = 10.sp)
+                        Text("48%", color = AppColors.bg.copy(alpha = 0.6f), fontSize = 10.sp)
+                    }
+                }
+            }
+        }
+
+        // Правая карточка (Форма)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+            border = BorderStroke(1.dp, AppColors.border),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Личные данные", color = AppColors.cream, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = localForm.name,
                     onValueChange = { localForm = localForm.copy(name = it) },
-                    label = { Text("Имя", color = AppColors.muted) },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = AppColors.amber,
-                        unfocusedBorderColor = AppColors.border,
-                        textColor = AppColors.cream
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(end = 8.dp)
+                    label = { Text("Имя", fontSize = 12.sp) },
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-            GridCell(weight = 1f) {
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = localForm.phone,
                     onValueChange = { localForm = localForm.copy(phone = it) },
-                    label = { Text("Телефон", color = AppColors.muted) },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = AppColors.amber,
-                        unfocusedBorderColor = AppColors.border,
-                        textColor = AppColors.cream
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(start = 8.dp)
+                    label = { Text("Телефон", fontSize = 12.sp) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GridRow {
-            GridCell(weight = 1f) {
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = localForm.email,
                     onValueChange = { localForm = localForm.copy(email = it) },
-                    label = { Text("Email", color = AppColors.muted) },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = AppColors.amber,
-                        unfocusedBorderColor = AppColors.border,
-                        textColor = AppColors.cream
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(end = 8.dp)
+                    label = { Text("Email", fontSize = 12.sp) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-            GridCell(weight = 1f) {
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = localForm.city,
                     onValueChange = { localForm = localForm.copy(city = it) },
-                    label = { Text("Город", color = AppColors.muted) },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = AppColors.amber,
-                        unfocusedBorderColor = AppColors.border,
-                        textColor = AppColors.cream
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(start = 8.dp)
+                    label = { Text("Город", fontSize = 12.sp) },
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = localForm.birthday,
+                    onValueChange = { localForm = localForm.copy(birthday = it) },
+                    label = { Text("Дата рождения", fontSize = 12.sp) },
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(color = AppColors.border)
+                Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = localForm.birthday,
-            onValueChange = { localForm = localForm.copy(birthday = it) },
-            label = { Text("Дата рождения", color = AppColors.muted) },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = AppColors.amber,
-                unfocusedBorderColor = AppColors.border,
-                textColor = AppColors.cream
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(
-                onClick = {
-                    onUpdateForm(localForm)
-                    onSave(true)
-                    // В реальном проекте тут будет запрос к API
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
-                shape = RoundedCornerShape(4.dp),
-                modifier = Modifier.padding(end = 12.dp)
-            ) {
-                Text("Сохранить", fontWeight = FontWeight.SemiBold)
-            }
-
-            if (saved) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_save), // Или свой векторный ресурс
-                        contentDescription = null,
-                        tint = AppColors.safe
-                    )
-                    Text("Сохранено", color = AppColors.safe, fontSize = 14.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                        onClick = {
+                            onUpdateForm(localForm)
+                            onSave(true)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("Сохранить", fontWeight = FontWeight.SemiBold)
+                    }
+                    if (saved) {
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Filled.Check, contentDescription = null, tint = AppColors.safe, modifier = Modifier.size(16.dp))
+                            Text("Сохранено", color = AppColors.safe, fontSize = 14.sp)
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-// --- ORDERS CONTENT ---
+// --- ВКЛАДКА: ЗАКАЗЫ ---
 
 @Composable
-fun OrdersContent(filter: String, onFilterChange: (String) -> Unit) {
+fun OrdersTabContent(filter: String, onFilterChange: (String) -> Unit) {
     val filtered = if (filter == "all") MOCK_ORDERS else MOCK_ORDERS.filter { it.status == filter }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 16.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
             listOf("all", "delivered", "cancelled").forEach { f ->
                 val label = when (f) {
                     "all" -> "Все"
@@ -426,32 +543,35 @@ fun OrdersContent(filter: String, onFilterChange: (String) -> Unit) {
                     else -> "Отменены"
                 }
                 val isSelected = filter == f
-                OutlinedButton(
+                Button(
                     onClick = { onFilterChange(f) },
-                    colors = if (isSelected)
-                        ButtonDefaults.outlinedButtonColors(containerColor = AppColors.amber, contentColor = AppColors.bg)
-                    else
-                        ButtonDefaults.outlinedButtonColors(containerColor = AppColors.surface2, contentColor = AppColors.muted),
-                    border = androidx.compose.ui.graphics.Stroke(1.dp, if (isSelected) AppColors.amber else AppColors.border),
-                    shape = RoundedCornerShape(4.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSelected) AppColors.amber else AppColors.surface2,
+                        contentColor = if (isSelected) AppColors.bg else AppColors.muted
+                    ),
+                    shape = RoundedCornerShape(4.dp),
+                    border = if (!isSelected) BorderStroke(1.dp, AppColors.border) else null,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text(label, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
         if (filtered.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(16.dp).wrapContentSize(Alignment.Center)) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("📦", fontSize = 48.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text("Заказов с таким статусом нет", color = AppColors.muted, textAlign = TextAlign.Center)
                 }
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(filtered) { order ->
-                    OrderCard(order = order)
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                filtered.forEach { order -> OrderCard(order = order) }
             }
         }
     }
@@ -459,190 +579,181 @@ fun OrdersContent(filter: String, onFilterChange: (String) -> Unit) {
 
 @Composable
 fun OrderCard(order: Order) {
-    Surface(
-        color = AppColors.surface,
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.ui.graphics.Stroke(1.dp, AppColors.border)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, AppColors.border),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column {
+            // Шапка заказа
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(AppColors.surface), // Чтобы перекрыть границы
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(order.id, color = AppColors.cream, fontWeight = FontWeight.Medium)
+                    Text(order.id, color = AppColors.cream, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text("${order.date} · ${order.delivery}", color = AppColors.muted, fontSize = 12.sp)
                 }
                 StatusBadge(status = order.status)
-                Text("${order.total} ₽", color = AppColors.amber, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("${order.items.size} ${if (order.items.size == 1) "товар" else "товара"}", color = AppColors.muted, fontSize = 12.sp)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("${order.total} ₽", color = AppColors.amber, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("${order.items.size} товара", color = AppColors.muted, fontSize = 11.sp)
+                }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(order.items) { item ->
+            HorizontalDivider(color = AppColors.border)
+            // Товары
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                order.items.forEach { item ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(AppColors.surface2)) {
-                            // Тут можно вставить Image(painter = rememberImagePainter(item.img)) если есть Coil/Glide
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(AppColors.surface2)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(item.name, color = AppColors.cream, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("${item.qty} шт. × ${item.price} ₽", color = AppColors.muted, fontSize = 12.sp)
+                            Text(item.name, color = AppColors.cream, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${item.qty} шт. × ${item.price} ₽", color = AppColors.muted, fontSize = 11.sp)
                         }
-                        Text("${item.qty * item.price} ₽", color = AppColors.cream, fontWeight = FontWeight.SemiBold)
+                        Text("${item.qty * item.price} ₽", color = AppColors.cream, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     }
                 }
             }
-
             if (order.status == "delivered") {
                 Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = {}) {
-                    Text("Купить снова →", color = AppColors.amber)
+                TextButton(
+                    onClick = {},
+                    modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.amber)
+                ) {
+                    Text("Купить снова →", fontSize = 13.sp)
                 }
             }
         }
     }
 }
 
-// --- RESERVATIONS CONTENT ---
+// --- ВКЛАДКА: БРОНИ ---
 
 @Composable
-fun ReservationsContent() {
+fun ReservationsTabContent() {
     val upcoming = MOCK_RESERVATIONS.filter { it.status == "upcoming" }
     val past = MOCK_RESERVATIONS.filter { it.status == "past" }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         if (upcoming.isNotEmpty()) {
             Text(
-                text = "Предстоящие",
+                text = "ПРЕДСТОЯЩИЕ",
                 color = AppColors.amber,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp,
-                textTransform = TextTransform.Uppercase,
-                modifier = Modifier.padding(vertical = 8.dp)
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(upcoming) { r ->
-                    ReservationCard(r = r, isUpcoming = true)
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                upcoming.forEach { r -> ReservationCard(r = r, isUpcoming = true) }
             }
         }
 
         if (past.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "История посещений",
+                text = "ИСТОРИЯ ПОСЕЩЕНИЙ",
                 color = AppColors.muted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp,
-                textTransform = TextTransform.Uppercase,
-                modifier = Modifier.padding(vertical = 8.dp)
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(past) { r ->
-                    ReservationCard(r = r, isUpcoming = false)
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                past.forEach { r -> ReservationCard(r = r, isUpcoming = false) }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Divider(color = AppColors.border)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider(color = AppColors.border)
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {},
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
-            shape = RoundedCornerShape(6.dp),
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(4.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_input_add), contentDescription = null)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("+ Новая бронь", fontWeight = FontWeight.SemiBold)
-            }
+            Text("+ Новая бронь", fontWeight = FontWeight.SemiBold)
         }
     }
 }
-
-// --- ПРОДОЛЖЕНИЕ ReservationCard ---
 
 @Composable
 fun ReservationCard(r: Reservation, isUpcoming: Boolean) {
-    Surface(
-        color = if (isUpcoming) AppColors.surface else AppColors.surface.copy(alpha = 0.7f),
-        shape = RoundedCornerShape(12.dp),
-        border = if (isUpcoming)
-            androidx.compose.ui.graphics.Stroke(1.dp, AppColors.amber.copy(alpha = 0.3f))
-        else
-            androidx.compose.ui.graphics.Stroke(1.dp, AppColors.border)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = if (isUpcoming) AppColors.surface else AppColors.surface.copy(alpha = 0.7f)),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, if (isUpcoming) AppColors.amber.copy(alpha = 0.3f) else AppColors.border),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val dateParts = r.date.split(" ")
-            val day = dateParts.firstOrNull() ?: ""
-            val rest = dateParts.drop(1).joinToString(" ")
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Блок даты
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(if (isUpcoming) AppColors.amber else AppColors.surface2),
+                contentAlignment = Alignment.Center
+            ) {
+                val dateParts = r.date.split(" ")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(dateParts.firstOrNull() ?: "", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = if (isUpcoming) AppColors.bg else AppColors.muted)
+                    Text(dateParts.drop(1).joinToString(" "), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (isUpcoming) AppColors.bg.copy(alpha = 0.8f) else AppColors.muted.copy(alpha = 0.6f))
+                }
+            }
 
-            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isUpcoming) AppColors.amber else AppColors.surface2)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(r.time, color = AppColors.cream, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    StatusBadge(r.status)
+                }
+                val guestsText = "${r.guests} ${
+                    when (r.guests) {
+                        1 -> "гость"
+                        in 2..4 -> "гостя"
+                        else -> "гостей"
+                    }
+                }${if (r.comment.isNotBlank()) " · $r.comment" else ""}"
+                Text(guestsText, color = AppColors.muted, fontSize = 13.sp)
+                Text("Бронь ${r.id} · Цветной бульвар, 12", color = AppColors.muted, fontSize = 11.sp)
+            }
+
+            if (isUpcoming) {
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {},
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.urgent),
+                        border = BorderStroke(1.dp, AppColors.urgent),
+                        shape = RoundedCornerShape(4.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                     ) {
-                        Text(day, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = if (isUpcoming) AppColors.bg else AppColors.muted)
-                        Text(rest, fontSize = 10.sp, color = if (isUpcoming) AppColors.bg.copy(alpha = 0.8f) else AppColors.muted.copy(alpha = 0.6f))
+                        Text("Отменить", fontSize = 11.sp)
                     }
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-                        Text(r.time, color = AppColors.cream, fontWeight = FontWeight.SemiBold)
-                        StatusBadge(r.status)
-                    }
-                    val guestsText = "${r.guests} ${
-                        when (r.guests) {
-                            1 -> "гость"
-                            in 2..4 -> "гостя"
-                            else -> "гостей"
-                        }
-                    }${if (r.comment.isNotBlank()) " · $r.comment" else ""}"
-                    Text(guestsText, color = AppColors.muted, fontSize = 13.sp, lineHeight = 18.sp)
-                    Text("Бронь ${r.id} · Цветной бульвар, 12", color = AppColors.muted.copy(alpha = 0.6f), fontSize = 11.sp)
-                }
-
-                if (isUpcoming) {
-                    Column(horizontalArrangement = Arrangement.End) {
-                        OutlinedButton(
-                            onClick = { /* Отмена */ },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = AppColors.urgent
-                            ),
-                            border = androidx.compose.ui.graphics.Stroke(1.dp, AppColors.urgent),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        ) {
-                            Text("Отменить", fontSize = 12.sp, color = AppColors.urgent)
-                        }
-                        OutlinedButton(
-                            onClick = { /* Изменить */ },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = AppColors.surface2,
-                                contentColor = AppColors.cream
-                            ),
-                            border = androidx.compose.ui.graphics.Stroke(1.dp, AppColors.border),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text("Изменить", fontSize = 12.sp)
-                        }
+                    OutlinedButton(
+                        onClick = {},
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.cream),
+                        border = BorderStroke(1.dp, AppColors.border),
+                        shape = RoundedCornerShape(4.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text("Изменить", fontSize = 11.sp)
                     }
                 }
             }
@@ -650,166 +761,202 @@ fun ReservationCard(r: Reservation, isUpcoming: Boolean) {
     }
 }
 
-// --- SETTINGS CONTENT (Вкладка Настройки) ---
+// --- ВКЛАДКА: НАСТРОЙКИ ---
 
 @Composable
-fun SettingsContent(
+fun SettingsTabContent(
     notifications: Notifications,
     showDeleteConfirm: Boolean,
     passwordForm: PasswordData,
     passwordSaved: Boolean,
-    onUpdate: (Notifications, Boolean, PasswordData, Boolean) -> Unit
+    onUpdate: (Notifications, Boolean, PasswordData, Boolean) -> Unit,
+    onLogout: () -> Unit
 ) {
     var localNotifs by remember(notifications) { mutableStateOf(notifications) }
     var localPass by remember(passwordForm) { mutableStateOf(passwordForm) }
-    var showDelete by remember { mutableStateOf(showDeleteConfirm) }
-    var passSaved by remember { mutableStateOf(passwordSaved) }
+    var showDelete by remember(showDeleteConfirm) { mutableStateOf(showDeleteConfirm) }
+    var passSaved by remember(passwordSaved) { mutableStateOf(passwordSaved) }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Секция уведомлений
-        Text("Уведомления", color = AppColors.cream, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.marginBottom(16.dp))
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        // Уведомления
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+            border = BorderStroke(1.dp, AppColors.border),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Уведомления", color = AppColors.cream, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                listOf(
+                    "Статус заказов" to "orders",
+                    "Скоро истекает срок" to "expiry",
+                    "Акции и скидки" to "promos",
+                    "Рассылка" to "newsletter"
+                ).forEach { (label, field) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(label, color = AppColors.cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                when (field) {
+                                    "orders" -> "Когда заказ принят, отправлен или готов к выдаче"
+                                    "expiry" -> "Напоминание за 2 часа до исчезновения товара"
+                                    "promos" -> "Новые спецпредложения и распродажи"
+                                    else -> "Еженедельный дайджест о меню и событиях"
+                                },
+                                color = AppColors.muted, fontSize = 11.sp
+                            )
+                        }
+                        Toggle(
+                            checked = when (field) {
+                                "orders" -> localNotifs.orders
+                                "promos" -> localNotifs.promos
+                                "expiry" -> localNotifs.expiry
+                                else -> localNotifs.newsletter
+                            },
+                            onCheckedChange = {
+                                localNotifs = when (field) {
+                                    "orders" -> localNotifs.copy(orders = it)
+                                    "promos" -> localNotifs.copy(promos = it)
+                                    "expiry" -> localNotifs.copy(expiry = it)
+                                    else -> localNotifs.copy(newsletter = it)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
-        listOf(
-            "Заказы" to "orders",
-            "Акции и промо" to "promos",
-            "Срок годности товаров" to "expiry",
-            "Рассылка" to "newsletter"
-        ).forEach { (label, field) ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-            ) {
-                Text(label, color = AppColors.cream, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                Toggle(
-                    checked = when (field) {
-                        "orders" -> localNotifs.orders
-                        "promos" -> localNotifs.promos
-                        "expiry" -> localNotifs.expiry
-                        else -> localNotifs.newsletter
-                    },
-                    onCheckedChange = {
-                        localNotifs = when (field) {
-                            "orders" -> localNotifs.copy(orders = it)
-                            "promos" -> localNotifs.copy(promos = it)
-                            "expiry" -> localNotifs.copy(expiry = it)
-                            else -> localNotifs.copy(newsletter = it)
+        // Смена пароля
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+            border = BorderStroke(1.dp, AppColors.border),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Изменить пароль", color = AppColors.cream, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = localPass.current,
+                    onValueChange = { localPass = localPass.copy(current = it) },
+                    label = { Text("Текущий пароль") },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = localPass.next,
+                    onValueChange = { localPass = localPass.copy(next = it) },
+                    label = { Text("Новый пароль") },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = localPass.confirm,
+                    onValueChange = { localPass = localPass.copy(confirm = it) },
+                    label = { Text("Повторите новый") },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    colors = profileTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                        onClick = {
+                            if (localPass.next == localPass.confirm) {
+                                passSaved = true
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("Обновить пароль", fontWeight = FontWeight.SemiBold)
+                    }
+                    if (passSaved) {
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("Обновлено", color = AppColors.safe, fontSize = 14.sp)
+                    }
+                }
+            }
+        }
+
+        // Опасная зона
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+            border = BorderStroke(1.dp, AppColors.urgent.copy(alpha = 0.2f)),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Опасная зона", color = AppColors.cream, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Удаление аккаунта необратимо. История заказов, баллы и брони будут удалены без возможности восстановления.", color = AppColors.muted, fontSize = 13.sp)
+                Spacer(modifier = Modifier.height(16.dp))
+                if (!showDelete) {
+                    OutlinedButton(
+                        onClick = { showDelete = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.urgent),
+                        border = BorderStroke(1.dp, AppColors.urgent.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("Удалить аккаунт", fontWeight = FontWeight.SemiBold)
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .background(AppColors.urgent.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                            .border(1.dp, AppColors.urgent.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text("Вы уверены? Это действие необратимо.", color = AppColors.urgent, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { showDelete = false },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.muted),
+                                border = BorderStroke(1.dp, AppColors.border),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text("Отмена")
+                            }
+                            Button(
+                                onClick = {
+                                    showDelete = false
+                                    onLogout() // Выход из аккаунта
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.urgent, contentColor = AppColors.cream),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text("Удалить навсегда")
+                            }
                         }
                     }
-                )
+                }
             }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        Divider(color = AppColors.border, thickness = 1.dp)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Секция смены пароля
-        Text("Смена пароля", color = AppColors.cream, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.marginBottom(16.dp))
-
-        OutlinedTextField(
-            value = localPass.current,
-            onValueChange = { localPass = localPass.copy(current = it) },
-            label = { Text("Текущий пароль", color = AppColors.muted) },
-            isError = false,
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = AppColors.amber,
-                unfocusedBorderColor = AppColors.border,
-                textColor = AppColors.cream
-            ),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-        )
-
-        OutlinedTextField(
-            value = localPass.next,
-            onValueChange = { localPass = localPass.copy(next = it) },
-            label = { Text("Новый пароль", color = AppColors.muted) },
-            isError = false,
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = AppColors.amber,
-                unfocusedBorderColor = AppColors.border,
-                textColor = AppColors.cream
-            ),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-        )
-
-        OutlinedTextField(
-            value = localPass.confirm,
-            onValueChange = { localPass = localPass.copy(confirm = it) },
-            label = { Text("Подтверждение", color = AppColors.muted) },
-            isError = localPass.next != localPass.confirm && localPass.next.isNotEmpty(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = if (localPass.next != localPass.confirm) AppColors.urgent else AppColors.amber,
-                unfocusedBorderColor = AppColors.border,
-                textColor = AppColors.cream
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Button(
-                onClick = {
-                    // Тут должна быть валидация и запрос к API
-                    if (localPass.next == localPass.confirm) {
-                        passSaved = true
-                        // onUpdate(...)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.amber, contentColor = AppColors.bg),
-                shape = RoundedCornerShape(4.dp)
-            ) {
-                Text("Сохранить пароль", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            }
-
-            if (passSaved) {
-                Text("Сохранено", color = AppColors.safe, fontSize = 12.sp, modifier = Modifier.alignByBaseline())
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        Divider(color = AppColors.border, thickness = 1.dp)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Кнопка удаления аккаунта
-        Text("Безопасность и удаление", color = AppColors.cream, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.marginBottom(12.dp))
-        
-        Button(
-            onClick = { showDelete = true },
-            colors = ButtonDefaults.buttonColors(containerColor = AppColors.urgent, contentColor = AppColors.bg),
-            shape = RoundedCornerShape(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_delete), contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Удалить аккаунт", fontWeight = FontWeight.SemiBold)
-            }
-        }
-
-        if (showDelete) {
-            AlertDialog(
-                onDismissRequest = { showDelete = false },
-                title = { Text("Вы уверены?", color = AppColors.urgent) },
-                text = { Text("Это действие нельзя отменить. Все ваши данные, заказы и баллы будут безвозвратно удалены.") },
-                confirmButton = {
-                    Button(onClick = { 
-                        showDelete = false 
-                        /* Тут логика удаления */
-                    }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.urgent)) {
-                        Text("Да, удалить", color = Color.White)
-                    }
-                },
-                dismissButton = {
-                    Button(onClick = { showDelete = false }) {
-                        Text("Отмена")
-                    }
-                },
-                backgroundColor = AppColors.surface,
-                contentColor = AppColors.cream
-            )
         }
     }
 }
+
+// --- Стили полей ---
+
+@Composable
+private fun profileTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = AppColors.amber,
+    unfocusedBorderColor = AppColors.border,
+    focusedTextColor = AppColors.cream,
+    unfocusedTextColor = AppColors.cream,
+    focusedLabelColor = AppColors.amber,
+    unfocusedLabelColor = AppColors.muted,
+    cursorColor = AppColors.amber,
+    focusedContainerColor = AppColors.surface2,
+    unfocusedContainerColor = AppColors.surface2
+)
